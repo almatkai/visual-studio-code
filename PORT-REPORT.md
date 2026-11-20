@@ -1,0 +1,13 @@
+# Native Visual Studio Code testing preview 0.1.1
+
+Seven ordinary commands run in a standalone Rust SDK process: index, open-with-vscode, open-new-window, extensions, install-extension, commandpalette, and open-agents-window. macOS arm64 and Windows x64 are supported. The SDK is pinned to immutable published revision 1a11afc14693cc6463e0b95ae7d61991b4a60427. Requires Tezbar 0.3.0-beta.12 for the existing Quick Link host route.
+
+The initial six-command implementation follows upstream cd75ae8af9cf9ed5bc18a26a4fd0d81d5ed217e3. The seventh command follows commit 886cbd73fe377ad1d8f0c17083e6cd4c96748a33; four exact Git blobs, hashes and original package metadata are under reference/agents-window-886cbd73. Newer upstream changes beyond that command have not automatically been ported.
+
+The native port reads editor SQLite/storage.json history, supports remote folders/workspaces, lists/grids, native pins, branch tags, copying/reveal, configured terminal, installed-extension update/uninstall, Marketplace search/install and Command Palette transit/Quick Links. First-use legacy pin import retains source bytes and gives existing native pins precedence. Destructive history/uninstall actions require explicit confirmation. Native rendering differs in rich highlighting, theme color and icons; some terminal tab/layout preferences remain preserved with incomplete behavior.
+
+Open Agents Window uses --agents for Code/Insiders. Antigravity opens the distinct Agents application, preserving the Antigravity preference value; Cursor opens directly by path. Other editors are discovered through the host application list, including custom installations, with conventional paths as fallback. Shared Devin/Windsurf bundle IDs are disambiguated by application path. Launching applications does not require editor profile/product.json. Failed launches return before the launcher is hidden.
+
+Remaining upstream drift includes Antigravity IDE rebranding in the original six commands and per-editor Marketplace routing. The current native Marketplace implementation uses VS Code Marketplace. Full upstream behavioral parity, live editor/window-permission acceptance and native desktop rendering acceptance are not established.
+
+Tests use owned editor files, a fake editor process, loopback HTTP and recording host replies. They do not launch real editors, alter real editor profiles or touch the real clipboard. Unit/process checks, artifact verification and publication are separately recorded by the parent workspace; this report is not a release or live acceptance claim.

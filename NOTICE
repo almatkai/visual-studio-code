@@ -1,0 +1,4 @@
+Visual Studio Code extension. Original author: thomas and contributors listed in extension.json. Original MIT license preserved.
+Original source: https://github.com/raycast/extensions/tree/cd75ae8af9cf9ed5bc18a26a4fd0d81d5ed217e3/extensions/visual-studio-code-recent-projects
+Agents Window refresh: https://github.com/raycast/extensions/tree/886cbd73fe377ad1d8f0c17083e6cd4c96748a33/extensions/visual-studio-code-recent-projects
+Native testing preview: https://github.com/almatkai/visual-studio-code

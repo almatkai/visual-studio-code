@@ -1,0 +1,29 @@
+{
+  "commit": "886cbd73fe377ad1d8f0c17083e6cd4c96748a33",
+  "files": [
+    {
+      "path": "extensions/visual-studio-code-recent-projects/src/open-agents-window.ts",
+      "gitBlob": "23ad3b4da76ee4a880aead8d4c4f04bf40935fc9",
+      "sha256": "614bbb930be286611da2748b4f571e7886ab2bea8e45498178a12b83e31545f9",
+      "bytes": 2756
+    },
+    {
+      "path": "extensions/visual-studio-code-recent-projects/src/lib/vscode.ts",
+      "gitBlob": "1f977ecbd67a7377b3e4829f337473b5dcdfe6b5",
+      "sha256": "6d84cd441d85be31091f41d5f881c82680cb632f9c24a0f1e7339bd0725cd5fe",
+      "bytes": 18646
+    },
+    {
+      "path": "extensions/visual-studio-code-recent-projects/src/utils/editor.ts",
+      "gitBlob": "0b430bdc9ac21d09e4bb3468c5b5d49d37fa1b22",
+      "sha256": "0517b6597d0d3dcb19816f9263a457a2f06745039361e2a7974389364dc560e9",
+      "bytes": 3573
+    },
+    {
+      "path": "extensions/visual-studio-code-recent-projects/package.json",
+      "gitBlob": "62137418f760f33a705ab6c1ba5d34e1409423c8",
+      "sha256": "14c0eb9a23d4889954d2b6b5290c4b6e716e2e59e6e85090c94846ae43ff0746",
+      "bytes": 6943
+    }
+  ]
+}

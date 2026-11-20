@@ -1,0 +1,20 @@
+[package]
+name = "tezbar-visual-studio-code"
+version = "0.1.1"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[dependencies]
+tezbar-extension-sdk = { git = "https://github.com/almatkai/tezbar-extension-sdk-rust.git", rev = "1a11afc14693cc6463e0b95ae7d61991b4a60427", version = "=0.1.1" }
+serde_json = { version = "1", features = ["preserve_order"] }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "process", "io-util"] }
+rusqlite = { version = "=0.32.1", features = ["bundled"] }
+reqwest = { version = "=0.12.28", default-features = false, features = ["rustls-tls", "stream"] }
+url = "2"
+uuid = { version = "=1.23.3", features = ["v4"] }
+tempfile = "3"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_System_Threading"] }
