@@ -64,7 +64,9 @@ with tempfile.TemporaryDirectory(prefix='tezbar-vscode-owned-') as tmp, owned_pr
  v=invoke('palette',action(v,'Run Command'));assert calls[-1]['method']=='host.shell.open' and '%23' in calls[-1]['params']['target'] and '%25' in calls[-1]['params']['target']
  invoke('palette',action(v,'Create Quicklink'));assert calls[-1]['method']=='host.quicklinks.create'
  v=open_('new','open-new-window');assert v['mode']=='no-view' and cli()==['--new-window']
+ (root/'cli-last.json').unlink(missing_ok=True)
  v=open_('agents','open-agents-window');assert v['mode']=='no-view' and cli()==['--agents']
+ (root/'cli-last.json').unlink(missing_ok=True)
  v=open_('insiders-agents','open-agents-window',{'build':'Code - Insiders'});assert v['mode']=='no-view' and cli()==['--agents']
  for build in ['Antigravity','Cursor','Windsurf']:
   before=len(calls);v=open_('agents-'+build,'open-agents-window',{'build':build});assert v['mode']=='no-view'

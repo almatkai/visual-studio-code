@@ -80,7 +80,7 @@ impl Editor {
         } else {
             home.join("Library/Application Support")
         };
-        let mut roots = if cfg!(windows) {
+        let roots = if cfg!(windows) {
             vec![
                 std::env::var_os("LOCALAPPDATA")
                     .map(PathBuf::from)
@@ -98,52 +98,8 @@ impl Editor {
             vec![PathBuf::from("/Applications"), home.join("Applications")]
         };
         let folder = if cfg!(windows) { def.2 } else { def.3 };
-        let install = roots
-            .drain(..)
-            .map(|r| r.join(folder))
-            .find(|p| p.is_dir())
-            .ok_or("Editor is not installed. Choose another Build in extension preferences.")?;
-        let (app, executable) = if cfg!(windows) {
-            let mut candidates = vec![install.join("resources/app")];
-            if let Ok(dirs) = std::fs::read_dir(&install) {
-                let mut versioned: Vec<_> = dirs
-                    .flatten()
-                    .filter(|d| {
-                        d.file_name().to_str().is_some_and(|n| {
-                            n.len() == 10 && n.bytes().all(|b| b.is_ascii_hexdigit())
-                        })
-                    })
-                    .collect();
-                versioned.sort_by_key(|d| {
-                    std::cmp::Reverse(d.metadata().and_then(|m| m.modified()).ok())
-                });
-                candidates.extend(
-                    versioned
-                        .into_iter()
-                        .map(|d| d.path().join("resources/app")),
-                );
-            }
-            let app = candidates
-                .into_iter()
-                .find(|p| p.join("product.json").is_file())
-                .ok_or("Editor product.json unavailable")?;
-            let product = read_json(&app.join("product.json"), 2 * 1024 * 1024)?;
-            let exe = windows_executable(&install, build, &product)
-                .ok_or("Editor executable unavailable")?;
-            (app, exe)
-        } else {
-            let app = install.join("Contents/Resources/app");
-            let product = read_json(&app.join("product.json"), 2 * 1024 * 1024)?;
-            let exe = install
-                .join("Contents/MacOS")
-                .join(product["nameShort"].as_str().unwrap_or("Electron"));
-            let exe = if exe.is_file() {
-                exe
-            } else {
-                install.join("Contents/MacOS/Electron")
-            };
-            (app, exe)
-        };
+        let installations: Vec<_> = roots.into_iter().map(|root| root.join(folder)).collect();
+        let (app, executable) = resolve_installation(build, cfg!(windows), &installations)?;
         let global = support.join(build).join("User/globalStorage");
         let product = read_json(&app.join("product.json"), 2 * 1024 * 1024)?;
         let database = product["sharedDataFolderName"]
@@ -262,6 +218,70 @@ impl Editor {
         }
         Ok(out)
     }
+}
+
+/// Ignore incomplete/stale installations rather than masking the next usable root.
+pub fn resolve_installation(
+    build: &str,
+    windows: bool,
+    installations: &[PathBuf],
+) -> Result<(PathBuf, PathBuf), String> {
+    for install in installations {
+        let resolve = || -> Result<(PathBuf, PathBuf), String> {
+            let (app, executable) = if windows {
+                let mut candidates = vec![install.join("resources/app")];
+                if let Ok(dirs) = std::fs::read_dir(&install) {
+                    let mut versioned: Vec<_> = dirs
+                        .flatten()
+                        .filter(|d| {
+                            d.file_name().to_str().is_some_and(|n| {
+                                n.len() == 10 && n.bytes().all(|b| b.is_ascii_hexdigit())
+                            })
+                        })
+                        .collect();
+                    versioned.sort_by_key(|d| {
+                        std::cmp::Reverse(d.metadata().and_then(|m| m.modified()).ok())
+                    });
+                    candidates.extend(
+                        versioned
+                            .into_iter()
+                            .map(|d| d.path().join("resources/app")),
+                    );
+                }
+                let app = candidates
+                    .into_iter()
+                    .find(|p| p.join("product.json").is_file())
+                    .ok_or("Editor product.json unavailable")?;
+                let product = read_json(&app.join("product.json"), 2 * 1024 * 1024)?;
+                let exe = windows_executable(install, build, &product)
+                    .ok_or("Editor executable unavailable")?;
+                (app, exe)
+            } else {
+                let app = install.join("Contents/Resources/app");
+                let product = read_json(&app.join("product.json"), 2 * 1024 * 1024)?;
+                let exe = install
+                    .join("Contents/MacOS")
+                    .join(product["nameShort"].as_str().unwrap_or("Electron"));
+                let exe = if exe.is_file() {
+                    exe
+                } else {
+                    install.join("Contents/MacOS/Electron")
+                };
+                (app, exe)
+            };
+            if !executable.is_file() || !app.join("out/cli.js").is_file() {
+                return Err("Editor executable or CLI unavailable".into());
+            }
+            Ok((app, executable))
+        };
+        if let Ok(found) = resolve() {
+            return Ok(found);
+        }
+    }
+    Err(
+        "No complete editor installation found. Choose another Build in extension preferences."
+            .into(),
+    )
 }
 
 pub(super) fn windows_executable(install: &Path, build: &str, product: &Value) -> Option<PathBuf> {

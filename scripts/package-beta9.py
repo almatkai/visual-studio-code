@@ -24,8 +24,18 @@ def check_sdk():
         raise SystemExit('Release blocked: Cargo.lock must contain the same immutable SDK git revision.')
 
 
+def check_architecture(data, target):
+    if target == 'aarch64-apple-darwin':
+        assert len(data) >= 32 and data[:4] == b'\xcf\xfa\xed\xfe' and int.from_bytes(data[4:8], 'little') == 0x100000c, 'Expected an arm64 Mach-O executable'
+    else:
+        assert len(data) >= 64 and data[:2] == b'MZ', 'Expected a Windows PE executable'
+        offset = int.from_bytes(data[0x3c:0x40], 'little')
+        assert offset + 6 <= len(data) and data[offset:offset+4] == b'PE\0\0' and int.from_bytes(data[offset+4:offset+6], 'little') == 0x8664, 'Expected a Windows x64 PE executable'
+
+
 def build(target, binary, output):
     check_sdk()
+    check_architecture(binary.read_bytes(), target)
     subprocess.check_call([sys.executable, str(ROOT / 'scripts/vendor-licenses.py'), '--check'])
     manifest = json.loads((ROOT / 'extension.json').read_text(encoding='utf-8'))
     slug = manifest['slug']
