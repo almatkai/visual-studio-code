@@ -1,11 +1,20 @@
 """Seven stock SDK commands using an owned Rust editor process and recording host."""
-import json,pathlib,queue,subprocess,sys,tempfile,threading,uuid
+import contextlib,json,pathlib,queue,subprocess,sys,tempfile,threading,uuid
 fixture=pathlib.Path(sys.argv[1]).resolve()
 production=pathlib.Path(sys.argv[2]).resolve()
 v2=pathlib.Path(__file__).resolve().parents[1]
 assert set(json.loads(subprocess.check_output([str(production),'--protocol-info']))['commands'])=={'index','open-with-vscode','open-new-window','extensions','install-extension','commandpalette','open-agents-window'}
-with tempfile.TemporaryDirectory(prefix='tezbar-vscode-owned-') as tmp:
- root=pathlib.Path(tmp);err=open(root/'stderr.log','wb');p=subprocess.Popen([str(fixture),str(root)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=err);frames=queue.Queue();calls=[]
+@contextlib.contextmanager
+def owned_process(root):
+ with (root/'stderr.log').open('wb') as err:
+  p=subprocess.Popen([str(fixture),str(root)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=err)
+  try:yield p
+  finally:
+   if p.stdin and not p.stdin.closed:p.stdin.close()
+   try:p.wait(timeout=5)
+   except subprocess.TimeoutExpired:p.kill();p.wait(timeout=5)
+with tempfile.TemporaryDirectory(prefix='tezbar-vscode-owned-') as tmp, owned_process(pathlib.Path(tmp)) as p:
+ root=pathlib.Path(tmp);frames=queue.Queue();calls=[]
  def reader():
   for line in p.stdout:frames.put(json.loads(line))
   frames.put(None)
@@ -61,11 +70,13 @@ with tempfile.TemporaryDirectory(prefix='tezbar-vscode-owned-') as tmp:
   before=len(calls);v=open_('agents-'+build,'open-agents-window',{'build':build});assert v['mode']=='no-view'
   if build=='Windsurf':
    assert calls[before]['method']=='host.apps.list';before+=1
-  assert calls[before]['method']=='host.shell.open' and str(root) in calls[before]['params']['target']
+  assert calls[before]['method']=='host.shell.open'
+  if sys.platform=='win32' and build!='Windsurf':assert calls[before]['params']['target']==str(fixture)
+  else:assert str(root) in calls[before]['params']['target']
   if build=='Windsurf':assert calls[before]['params']['target']==str(root/('Custom/Windsurf.exe' if sys.platform=='win32' else 'Custom/Windsurf.app'))
   assert calls[before+1]['method']=='host.window.visibility'
  v=open_('selected','open-with-vscode');assert v['mode']=='no-view' and cli()==['--new-window',str(root/'Project #100%')]
  selection=next(c for c in calls if c['method']=='host.selection.read');assert selection['params']=={'kind':'files','includeDirectories':True,'fallbackToCurrentDirectory':True}
  for sid in ['recent','installed','marketplace','palette','new','selected','agents','insiders-agents','agents-Antigravity','agents-Cursor','agents-Windsurf']:call('session.dispose',{'sessionId':sid})
- p.stdin.close();assert p.wait(timeout=5)==0;err.close()
+ p.stdin.close();assert p.wait(timeout=5)==0
  print('All seven stock SDK commands passed owned editor/clipboard/settings/selection/Quick Link/EOF process checks')
