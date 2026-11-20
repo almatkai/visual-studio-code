@@ -26,11 +26,14 @@ def check_sdk():
 
 def check_architecture(data, target):
     if target == 'aarch64-apple-darwin':
-        assert len(data) >= 32 and data[:4] == b'\xcf\xfa\xed\xfe' and int.from_bytes(data[4:8], 'little') == 0x100000c, 'Expected an arm64 Mach-O executable'
+        if not (len(data) >= 32 and data[:4] == b'\xcf\xfa\xed\xfe' and int.from_bytes(data[4:8], 'little') == 0x100000c):
+            raise ValueError('Expected an arm64 Mach-O executable')
     else:
-        assert len(data) >= 64 and data[:2] == b'MZ', 'Expected a Windows PE executable'
+        if not (len(data) >= 64 and data[:2] == b'MZ'):
+            raise ValueError('Expected a Windows PE executable')
         offset = int.from_bytes(data[0x3c:0x40], 'little')
-        assert offset + 6 <= len(data) and data[offset:offset+4] == b'PE\0\0' and int.from_bytes(data[offset+4:offset+6], 'little') == 0x8664, 'Expected a Windows x64 PE executable'
+        if not (offset + 6 <= len(data) and data[offset:offset+4] == b'PE\0\0' and int.from_bytes(data[offset+4:offset+6], 'little') == 0x8664):
+            raise ValueError('Expected a Windows x64 PE executable')
 
 
 def build(target, binary, output):
