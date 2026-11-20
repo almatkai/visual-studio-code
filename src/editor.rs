@@ -248,14 +248,20 @@ pub fn resolve_installation(
                             .map(|d| d.path().join("resources/app")),
                     );
                 }
-                let app = candidates
-                    .into_iter()
-                    .find(|p| p.join("product.json").is_file())
-                    .ok_or("Editor product.json unavailable")?;
-                let product = read_json(&app.join("product.json"), 2 * 1024 * 1024)?;
-                let exe = windows_executable(install, build, &product)
-                    .ok_or("Editor executable unavailable")?;
-                (app, exe)
+                let mut found = None;
+                for app in candidates {
+                    let Ok(product) = read_json(&app.join("product.json"), 2 * 1024 * 1024) else {
+                        continue;
+                    };
+                    let Some(exe) = windows_executable(install, build, &product) else {
+                        continue;
+                    };
+                    if app.join("out/cli.js").is_file() {
+                        found = Some((app, exe));
+                        break;
+                    }
+                }
+                found.ok_or("Editor product, executable or CLI unavailable")?
             } else {
                 let app = install.join("Contents/Resources/app");
                 let product = read_json(&app.join("product.json"), 2 * 1024 * 1024)?;

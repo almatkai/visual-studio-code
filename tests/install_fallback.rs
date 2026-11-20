@@ -24,10 +24,20 @@ fn stale_user_directory_does_not_hide_complete_windows_system_install() {
     );
     product(&stale.join("resources/app"));
     fs::write(stale.join("Updater.exe"), []).unwrap();
-    assert_eq!(resolve_installation("Code", true, &[stale.clone(), valid.clone()]).unwrap().1, valid.join("Code.exe"));
+    assert_eq!(
+        resolve_installation("Code", true, &[stale.clone(), valid.clone()])
+            .unwrap()
+            .1,
+        valid.join("Code.exe")
+    );
     fs::write(stale.join("Code.exe"), []).unwrap();
     fs::remove_file(stale.join("resources/app/out/cli.js")).unwrap();
-    assert_eq!(resolve_installation("Code", true, &[stale.clone(), valid.clone()]).unwrap().1, valid.join("Code.exe"));
+    assert_eq!(
+        resolve_installation("Code", true, &[stale.clone(), valid.clone()])
+            .unwrap()
+            .1,
+        valid.join("Code.exe")
+    );
     fs::remove_file(valid.join("Code.exe")).unwrap();
     assert!(resolve_installation("Code", true, &[stale, valid]).is_err());
 }
@@ -57,5 +67,39 @@ fn incomplete_system_bundle_does_not_hide_complete_mac_user_bundle() {
             .unwrap()
             .0,
         valid.join("Contents/Resources/app")
+    );
+}
+
+#[test]
+fn stale_windows_resources_do_not_hide_complete_versioned_resources() {
+    let root = tempfile::tempdir().unwrap();
+    let install = root.path().join("Microsoft VS Code");
+    let stale = install.join("resources/app");
+    let complete = install.join("0123456789/resources/app");
+    product(&stale);
+    fs::remove_file(stale.join("out/cli.js")).unwrap();
+    product(&complete);
+    fs::write(install.join("Code.exe"), []).unwrap();
+    assert_eq!(
+        resolve_installation("Code", true, &[install.clone()])
+            .unwrap()
+            .0,
+        complete
+    );
+    fs::write(stale.join("product.json"), "not JSON").unwrap();
+    assert_eq!(
+        resolve_installation("Code", true, &[install.clone()])
+            .unwrap()
+            .0,
+        complete
+    );
+    fs::remove_file(stale.join("product.json")).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    let broken_version = install.join("fedcba9876/resources/app");
+    product(&broken_version);
+    fs::write(broken_version.join("product.json"), "invalid newer product").unwrap();
+    assert_eq!(
+        resolve_installation("Code", true, &[install]).unwrap().0,
+        complete
     );
 }
