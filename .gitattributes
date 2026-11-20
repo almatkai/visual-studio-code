@@ -1,2 +1,5 @@
 * text=auto eol=lf
 reference/** -text linguist-vendored
+licenses/** -text
+resources/** -text
+LICENSE -text
